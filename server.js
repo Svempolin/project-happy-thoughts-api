@@ -57,11 +57,17 @@ app.get("/thought", async (req, res) => {
     perPageNum = Number(perPage),
   } = req.query;
 
-  const thought = await Thought.find({})
+  let thoughts = await Thought.find({})
     .sort({ createdAt: sortNum })
     .skip((pageNum - 1) * perPageNum)
     .limit(perPageNum);
-  res.status(200).json({ response: thought, success: true });
+
+  if (thoughts) {
+    thoughts = await Thought.find().sort({ createdAt: "desc" }).limit(20);
+    res.status(200).json({ response: thoughts, success: true });
+  } else {
+    res.status(404).json({ response: "Data not found", success: false });
+  }
 });
 
 app.post("/thought", async (req, res) => {
