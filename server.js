@@ -42,6 +42,10 @@ const Thought = mongoose.model("Thought", ThoughtSchema);
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.send("Hello world");
+});
+
 // Start defining your routes here
 app.get("/thought", async (req, res) => {
   const {
