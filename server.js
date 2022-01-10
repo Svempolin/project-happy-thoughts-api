@@ -1,7 +1,7 @@
-import express, { response } from "express";
+import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import { restart } from "nodemon";
+import listEndpoints from "express-list-endpoints";
 
 const mongoUrl = process.env.MONGO_URL || "mongodb://localhost/happyThoughts";
 mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -15,10 +15,12 @@ const port = process.env.PORT || 8080;
 const app = express();
 
 const ThoughtSchema = new mongoose.Schema({
-  name: {
+  message: {
     type: String,
     required: true,
-    unique: true,
+    minlength: 5,
+    maxlength: 140,
+    trim: true,
   },
   description: {
     type: String,
@@ -26,7 +28,7 @@ const ThoughtSchema = new mongoose.Schema({
     maxlength: 35,
     trim: true,
   },
-  score: {
+  hearts: {
     type: Number,
     default: 0,
   },
@@ -43,7 +45,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Hello world");
+  res.send(listEndpoints(app));
 });
 
 // Start defining your routes here
@@ -71,15 +73,15 @@ app.get("/thought", async (req, res) => {
 });
 
 app.post("/thought", async (req, res) => {
-  const { name, description } = req.body;
+  const { message } = req.body;
   try {
-    const newThought = await new Thought({ name, description }).save();
+    const newThought = await new Thought({ message }).save();
     res.status(201).json({ response: newThought, success: true });
   } catch (error) {
     res.status(400).json({ response: error, success: false });
   }
 });
-app.post("/thought/:id/score", async (req, res) => {
+app.post("/thought/:id/like", async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -87,7 +89,7 @@ app.post("/thought/:id/score", async (req, res) => {
       id,
       {
         $inc: {
-          score: 1,
+          hearts: 1,
         },
       },
       {
@@ -96,7 +98,7 @@ app.post("/thought/:id/score", async (req, res) => {
     );
     res.status(200).json({ response: updatedThought, success: true });
   } catch (error) {
-    res.status(400).json({ response: "could not update", success: false });
+    res.status(400).json({ response: error, success: false });
   }
 });
 
@@ -117,12 +119,12 @@ app.delete("/thought/:id", async (req, res) => {
 
 app.patch("/thought/:id", async (req, res) => {
   const { id } = req.params;
-  const { name } = req.body;
+  const { message } = req.body;
 
   try {
     const updatedThought = await Thought.findOneAndUpdate(
       { _id: id },
-      { name },
+      { message },
       { new: true }
     );
     if (updatedThought) {
